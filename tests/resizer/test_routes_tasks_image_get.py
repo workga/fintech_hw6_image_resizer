@@ -1,24 +1,24 @@
 import pytest
-from contextlib import nullcontext as does_not_raise
+from PIL import Image
 from redis import RedisError
-
 from rq.job import JobStatus, NoSuchJobError
 
-from app.resizer.schemas import ImageSize
-from PIL import Image
 from app.resizer.images import base64_from_bytes, bytes_from_image, image_from_bytes
+from app.resizer.schemas import ImageSize
+
 
 @pytest.mark.parametrize(
-    'size', [
+    'size',
+    [
         ImageSize.ORIGINAL,
         ImageSize.SIZE_32,
         ImageSize.SIZE_64,
         None,
-    ]
+    ],
 )
 def test_success(client, mocked_job, mocked_redis, size):
     mocked_job.fetch.return_value.get_status.return_value = JobStatus.FINISHED
-    
+
     image = Image.new(mode='RGB', size=(10, 10))
     image_b = bytes_from_image(image)
 
@@ -26,21 +26,24 @@ def test_success(client, mocked_job, mocked_redis, size):
         mocked_redis.return_value.get.return_value = image_b
     else:
         mocked_redis.return_value.get.return_value = base64_from_bytes(image_b)
-    
+
     if size is not None:
         response = client.get(f'/resizer/tasks/10/image?size={size.value}')
     else:
-        response = client.get(f'/resizer/tasks/10/image')
+        response = client.get('/resizer/tasks/10/image')
 
     assert response.status_code == 200
     try:
         image_from_bytes(response.content)
-    except Exception as error:
+
+    # Because this method must not raise any exceptions
+    except Exception:  # pylint: disable=broad-except
         assert False
 
 
 @pytest.mark.parametrize(
-    ('task_id', 'size'), [
+    ('task_id', 'size'),
+    [
         (0, ImageSize.ORIGINAL),
         (-1, ImageSize.ORIGINAL),
         (None, ImageSize.ORIGINAL),
@@ -51,7 +54,8 @@ def test_success(client, mocked_job, mocked_redis, size):
         (1, None),
         (1, ''),
         (1, 'a'),
-    ])
+    ],
+)
 def test_fail_invalid_params(client, task_id, size):
     response = client.get(f'/resizer/tasks/{task_id}/image?size={size}')
 
@@ -61,23 +65,23 @@ def test_fail_invalid_params(client, task_id, size):
 def test_fail_task_not_exists(client, mocked_job):
     mocked_job.fetch.side_effect = NoSuchJobError
 
-
-    response = client.get(f'/resizer/tasks/10/image')
+    response = client.get('/resizer/tasks/10/image')
 
     assert response.status_code == 404
 
 
 @pytest.mark.parametrize(
-    'job_status', [
+    'job_status',
+    [
         JobStatus.QUEUED,
         JobStatus.STARTED,
         JobStatus.FAILED,
-])
+    ],
+)
 def test_fail_task_not_finished(client, mocked_job, job_status):
     mocked_job.fetch.return_value.get_status.return_value = job_status
 
-
-    response = client.get(f'/resizer/tasks/10/image')
+    response = client.get('/resizer/tasks/10/image')
 
     assert response.status_code == 404
 
@@ -85,6 +89,6 @@ def test_fail_task_not_finished(client, mocked_job, job_status):
 def test_fail_redis_error(client, mocked_redis):
     mocked_redis.side_effect = RedisError
 
-    response = client.get(f'/resizer/tasks/10/image')
+    response = client.get('/resizer/tasks/10/image')
 
     assert response.status_code == 500

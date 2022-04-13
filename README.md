@@ -1,27 +1,23 @@
 # Image Resizer
-...
+API that allows you to scale images.
 
 ### Features
-- ...
-- ...
-- ...
+- Using Redis to store images and tasks
+- Using python-rq for task queue
+- Three docker containers for application, Redis and workers
+
 
 ### Endpoints
-<!-- You can see API documentation in swagger using url:
+You can see API documentation in swagger using url:
 ```
 /docs
-``` -->
+```
 
 ### Usage
 
-<!-- Create venv:
+Create venv:
 ```bash
     make venv
-```
-
-Create or recreate database
-```bash
-    make recreate
 ```
 
 Run application:
@@ -37,10 +33,10 @@ make docker-build
 Run docker containers:
 ```bash
 make docker-run
-``` -->
+```
 
 ### Development
-<!-- Run tests:
+Run tests:
 ```bash
     make test
 ```
@@ -53,4 +49,4 @@ Run linters:
 Run formatters:
 ```bash
     make format
-``` -->
+```

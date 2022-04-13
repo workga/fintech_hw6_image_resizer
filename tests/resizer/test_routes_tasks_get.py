@@ -4,17 +4,18 @@ from rq.job import JobStatus, NoSuchJobError
 
 
 @pytest.mark.parametrize(
-    'job_status', [
+    'job_status',
+    [
         JobStatus.QUEUED,
         JobStatus.STARTED,
         JobStatus.FINISHED,
         JobStatus.FAILED,
-])
+    ],
+)
 def test_success(client, mocked_job, job_status):
     mocked_job.fetch.return_value.get_status.return_value = job_status
 
-
-    response = client.get(f'/resizer/tasks/10')
+    response = client.get('/resizer/tasks/10')
 
     assert response.status_code == 200
 
@@ -24,12 +25,14 @@ def test_success(client, mocked_job, job_status):
 
 
 @pytest.mark.parametrize(
-    'task_id', [
+    'task_id',
+    [
         0,
         -1,
         None,
         'a',
-    ])
+    ],
+)
 def test_fail_invalid_params(client, task_id):
     response = client.get(f'/resizer/tasks/{task_id}')
 
@@ -39,8 +42,7 @@ def test_fail_invalid_params(client, task_id):
 def test_fail_task_not_exists(client, mocked_job):
     mocked_job.fetch.side_effect = NoSuchJobError
 
-
-    response = client.get(f'/resizer/tasks/10')
+    response = client.get('/resizer/tasks/10')
 
     assert response.status_code == 404
 
@@ -48,6 +50,6 @@ def test_fail_task_not_exists(client, mocked_job):
 def test_fail_redis_error(client, mocked_redis):
     mocked_redis.side_effect = RedisError
 
-    response = client.get(f'/resizer/tasks/10')
+    response = client.get('/resizer/tasks/10')
 
     assert response.status_code == 500

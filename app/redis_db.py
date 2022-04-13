@@ -1,5 +1,6 @@
 from functools import wraps
 from typing import Any, Callable, TypeVar, cast
+
 import redis
 from redis.exceptions import RedisError
 
@@ -14,12 +15,13 @@ connection_pool = redis.ConnectionPool(
     db=0,
 )
 
+
 def redis_connection(func: F) -> F:
     @wraps(func)
     def wrapper(*args: int, **kwargs: int) -> Any:
         try:
             conn = redis.Redis(connection_pool=connection_pool)
-            return func(conn, *args, **kwargs)
+            return func(*args, conn=conn, **kwargs)
         except RedisError as error:
             logger.error(error)
             raise

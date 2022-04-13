@@ -1,11 +1,11 @@
 from typing import Optional
 
+from redis.exceptions import RedisError
 from rq import Queue
 from rq.job import Job, JobStatus, NoSuchJobError
 
-from app.redis_db import redis_connection
-from redis import Connection
 from app.logger import logger
+from app.redis_db import redis_connection
 from app.resizer.images import (
     base64_from_bytes,
     bytes_from_base64,
@@ -30,14 +30,17 @@ def resize_image(image_b: bytes, size: ImageSize) -> bytes:
     return resized_image_b
 
 
-def encode_key(task_id: int, size: ImageSize):
+def encode_key(task_id: int, size: ImageSize) -> str:
     return f'{task_id}_{size}'
 
 
 @redis_connection
-def perform_task(conn: Connection, task_id: int):
+def perform_task(task_id: int, conn) -> None:  # type: ignore
     key = encode_key(task_id, ImageSize.ORIGINAL)
     original_image_b = conn.get(key)
+
+    if original_image_b is None:
+        raise RedisError()
 
     for size in [ImageSize.SIZE_32, ImageSize.SIZE_64]:
         resized_image_b = resize_image(original_image_b, size)
@@ -50,7 +53,7 @@ def perform_task(conn: Connection, task_id: int):
 
 
 @redis_connection
-def add_task(conn: Connection, image_b: bytes) -> TaskRead:
+def add_task(image_b: bytes, conn) -> TaskRead:  # type: ignore
     task_id = conn.incr('last_task_id')
     key = encode_key(task_id, ImageSize.ORIGINAL)
 
@@ -64,7 +67,8 @@ def add_task(conn: Connection, image_b: bytes) -> TaskRead:
 
 
 @redis_connection
-def get_task(conn: Connection, task_id: int) -> Optional[TaskRead]:
+def get_task(task_id: int, conn) -> Optional[TaskRead]:  # type: ignore
+    logger.info(type(conn))
     try:
         job = Job.fetch(str(task_id), connection=conn)
     except NoSuchJobError:
@@ -78,8 +82,8 @@ def get_task(conn: Connection, task_id: int) -> Optional[TaskRead]:
 
 
 @redis_connection
-def get_image(conn: Connection, task_id: int, size: ImageSize) -> Optional[bytes]:
-    task = get_task(task_id)
+def get_image(task_id: int, size: ImageSize, conn) -> Optional[bytes]:  # type: ignore
+    task = get_task(task_id)  # type: ignore[call-arg]
     if task is None:
         logger.error(f"Task doesn't exist: task_id = {task_id}")
         return None
@@ -93,8 +97,12 @@ def get_image(conn: Connection, task_id: int, size: ImageSize) -> Optional[bytes
     key = encode_key(task_id, size)
     if size == ImageSize.ORIGINAL:
         image_b = conn.get(key)
+        if image_b is None:
+            raise RedisError()
     else:
         image_b64 = conn.get(key)
+        if image_b64 is None:
+            raise RedisError()
         image_b = bytes_from_base64(image_b64)
 
     logger.info(f'Got image: task_id = {task_id}')

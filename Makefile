@@ -31,7 +31,7 @@ test-lf: ## Runs pytest (last failure)
 lint: ## Lint code
 	$(VENV)/bin/flake8 --jobs 4 --statistics --show-source $(CODE)
 	$(VENV)/bin/pylint --jobs 4 --rcfile=setup.cfg $(CODE)
-	$(VENV)/bin/mypy $(CODE)
+	$(VENV)/bin/mypy --show-error-codes $(CODE)
 	$(VENV)/bin/black --skip-string-normalization --check $(CODE)
 
 .PHONY: format
@@ -48,7 +48,6 @@ ci:	lint test ## Lint code then run tests
 .PHONY: up
 up: ## Run application
 	$(VENV)/bin/uvicorn --reload --factory app.app:create_app --host $(HOST) --port $(PORT)
-
 
 .PHONY: docker-build
 docker-build: ## Build docker image
