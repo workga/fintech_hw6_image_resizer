@@ -57,7 +57,7 @@ def tasks_get(task_id: int = Path(..., ge=1)) -> TaskRead:
 )
 def tasks_image_get(
     task_id: int = Path(..., ge=1),
-    size: ImageSize = Query(...),
+    size: ImageSize = Query(ImageSize.SIZE_32),
 ) -> Response:
     image_b = resizer.get_image(task_id, size)
     if image_b is None:

@@ -34,7 +34,7 @@ Build docker image:
 make docker-build
 ```
 
-Run docker container:
+Run docker containers:
 ```bash
 make docker-run
 ``` -->

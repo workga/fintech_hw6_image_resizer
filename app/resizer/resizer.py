@@ -72,7 +72,7 @@ def get_task(conn: Connection, task_id: int) -> Optional[TaskRead]:
         return None
 
     task_status = job.get_status(refresh=True)
-
+    print(type(job))
     logger.info(f'Got task status: task_id = {task_id}, task_status = {task_status}')
     return TaskRead(task_id=task_id, task_status=task_status)
 
