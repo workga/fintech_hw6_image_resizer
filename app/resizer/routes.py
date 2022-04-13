@@ -56,11 +56,7 @@ def tasks_get(task_id: int = Path(..., ge=1)) -> TaskRead:
     '/tasks/{task_id}/image',
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    responses = {
-        200: {
-            "content": {"image/png": {}}
-        }
-    }
+    responses={200: {'content': {'image/png': {}}}},
 )
 def tasks_image_get(
     task_id: int = Path(..., ge=1),
