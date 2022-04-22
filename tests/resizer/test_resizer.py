@@ -33,7 +33,7 @@ def test_perform_task_success(mocked_redis):
     mocked_redis.return_value.get.return_value = image_b
 
     try:
-        resizer.perform_task(10)  # type: ignore[call-arg]
+        resizer.perform_task(10)
     # Because this method must not raise any exceptions
     except Exception:  # pylint: disable=broad-except
         assert False
@@ -43,4 +43,11 @@ def test_perform_task_fail_redis_error(mocked_redis):
     mocked_redis.return_value.get.side_effect = RedisError
 
     with pytest.raises(RedisError):
-        resizer.perform_task(10)  # type: ignore[call-arg]
+        resizer.perform_task(10)
+
+
+def test_perform_task_fail_runtime_error(mocked_redis):
+    mocked_redis.return_value.get.return_value = None
+
+    with pytest.raises(RuntimeError):
+        resizer.perform_task(10)

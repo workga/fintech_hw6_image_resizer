@@ -1,7 +1,8 @@
 from enum import Enum
 
 from pydantic import BaseModel
-from rq.job import JobStatus
+
+from app.resizer.rqueue import TaskStatus
 
 
 class ImageSize(Enum):
@@ -12,4 +13,4 @@ class ImageSize(Enum):
 
 class TaskRead(BaseModel):
     task_id: int
-    task_status: JobStatus
+    task_status: TaskStatus
